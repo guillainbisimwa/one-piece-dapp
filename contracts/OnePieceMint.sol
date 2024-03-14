@@ -29,5 +29,48 @@ contract OnePieceMint is VRFConsumerBaseV2, ERC721, Ownable, ERC721URIStorage {
     mapping(address => bool) public hasMinted; // prevents users from minting multiple NFTs with the same address
     mapping(address => uint256) public s_addressToCharacter; // allows users to query which character they received based on their address
 
+    event NftRequested(uint256 requestId, address requester);
+    event CharacterTraitDetermined(uint256 characterId);
+    event NftMinted(uint256 characterId, address minter);
 
+    constructor(
+        address vrfCoordinatorV2Address,
+        uint64 subId,
+        bytes32 keyHash,
+        uint32 callbackGasLimit
+    ) VRFConsumerBaseV2(vrfCoordinatorV2Address) ERC721("OnePiece NFT", "OPN"){
+
+        i_vrfCoordinator = VRFCoordinatorV2Interface(vrfCoordinatorV2Address);
+        i_subscriptionId = subId;
+        i_keyHash = keyHash;
+        i_callbackGasLimit = callbackGasLimit;
+    }
+
+
+}
+
+function mintNFT(address recipient, uint256 characterId) internal {
+    // Ensure the address has not been minted before
+    require(!hasMinted[recipient], "You have already minted your house NFT");
+
+    // Get the next available token ID
+    uint256 tokenId = s_tokenCounter;
+
+    // Mint the NFT and assign it to the recipient
+    _safeMint(recipient, tokenId);
+
+    // Set the token URI for the minted NFT based on the character ID
+    _setTokenURI(tokenId, characterTokenURIs[characterId]);
+
+    // Map the recipient's address to the character ID they received
+    s_addressToCharacter[recipient] = characterId;
+
+    // Increment the token counter for the next minting
+    s_tokenCounter += 1;
+
+    // Mark the recipient's address as having minted an NFT
+    hasMinted[recipient] = true;
+
+    // Emit an event to log the minting of the NFT
+    emit NftMinted(characterId, recipient);
 }
