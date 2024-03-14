@@ -74,3 +74,24 @@ function mintNFT(address recipient, uint256 characterId) internal {
     // Emit an event to log the minting of the NFT
     emit NftMinted(characterId, recipient);
 }
+
+
+function requestNFT(uint256[5] memory answers) public {
+    // Determine the character based on the provided answers and store it for the user
+    userCharacter[msg.sender] = determineCharacter(answers);
+
+    // Request random words from the VRF coordinator to determine the character traits
+    uint256 requestId = i_vrfCoordinator.requestRandomWords(
+        i_keyHash, 
+        i_subscriptionId,
+        3,
+        i_callbackGasLimit,
+        1
+    );
+
+    // Map the request ID to the sender's address for later reference
+    requestIdToSender[requestId] = msg.sender;
+
+    // Emit an event to log the request for the NFT
+    emit NftRequested(requestId, msg.sender);
+}
