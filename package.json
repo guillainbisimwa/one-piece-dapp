@@ -6,6 +6,9 @@
   "author": "guillainbisimwa <guillainbisimwa@hotmail.fr>",
   "license": "MIT",
   "dependencies": {
+    "@chainlink/contracts": "^0.8.0",
+    "@openzeppelin/contracts": "^4.9.6",
+    "dotenv": "^16.4.5",
     "hardhat": "^2.22.0"
   },
   "devDependencies": {
