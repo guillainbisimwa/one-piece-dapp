@@ -1,33 +1,52 @@
-// We require the Hardhat Runtime Environment explicitly here. This is optional
-// but useful for running the script in a standalone fashion through `node <script>`.
-//
-// You can also run a script with `npx hardhat run <script>`. If you do that, Hardhat
-// will compile your contracts, add the Hardhat Runtime Environment's members to the
-// global scope, and execute the script.
-const hre = require("hardhat");
+// Import necessary modules
+const { ethers } = require("hardhat");
+const fs = require("fs");
+const dotenv = require("dotenv");
 
+// Load environment variables from .env file
+dotenv.config();
+
+// Main function to deploy contracts
 async function main() {
-  const currentTimestampInSeconds = Math.round(Date.now() / 1000);
-  const unlockTime = currentTimestampInSeconds + 60;
 
-  const lockedAmount = hre.ethers.parseEther("0.001");
+  // Get the deployer's signer
+  const [deployer] = await ethers.getSigners();
+  console.log("Deploying contracts with the account:", deployer.address);
 
-  const lock = await hre.ethers.deployContract("Lock", [unlockTime], {
-    value: lockedAmount,
-  });
+  // Get the necessary parameters from environment variables
+  const vrfCoordinatorV2Address = process.env.VRF_ADDRESS; // address of the VRFCoordinatorV2 contract
+  const subId = process.env.SUB_ID; // subscription ID for Chainlink VRF
+  const keyHash = process.env.KEY_HASH; // key hash for Chainlink VRF
+  const gasLimit = 2000000; // gas limit for contract deployment
 
-  await lock.waitForDeployment();
+  // Prepare arguments array for contract deployment
+  const argumentsArray = [vrfCoordinatorV2Address, subId, keyHash, gasLimit ]
 
-  console.log(
-    `Lock with ${ethers.formatEther(
-      lockedAmount
-    )}ETH and unlock timestamp ${unlockTime} deployed to ${lock.target}`
-  );
+  // Convert arguments array to string and save it to a file
+  const content = "module.exports = " + JSON.stringify(argumentsArray, null, 2) + ";";
+  fs.writeFileSync("./arguments.js", content);
+  console.log("arguments.js file generated successfully.");
+
+  // Deploying OnePiecePersonalityDapp contract
+  const OnePiecePersonalityDapp = await ethers.getContractFactory("OnePieceMint");
+  console.log("Deploying OnePiecePersonalityDapp...");
+
+  // Deploy the contract with provided arguments
+  const onePiecePersonalityDapp = await OnePiecePersonalityDapp.deploy(
+    vrfCoordinatorV2Address,
+    subId,
+    keyHash,
+    gasLimit);
+
+  // Log the address where the contract is deployed
+  console.log("OnePiecePersonalityDapp deployed to:", await onePiecePersonalityDapp.getAddress());
 }
 
-// We recommend this pattern to be able to use async/await everywhere
-// and properly handle errors.
-main().catch((error) => {
-  console.error(error);
-  process.exitCode = 1;
-});
+// Execute the main function
+main()
+  .then(() => process.exit(0)) // Exit with success status
+  .catch((error) => {
+    // Log error and exit with failure status
+    console.error(error);
+    process.exit(1);
+  });
